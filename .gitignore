@@ -1,2 +1,2 @@
-# gbdk compiler binaries
-*gbdk
+*lib/*
+.vscode/settings.json
