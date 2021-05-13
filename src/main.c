@@ -49,6 +49,7 @@ void fadein();
 void fadeout();
 void init_hero();
 void init_coins();
+void remove_coins();
 void move_hero(HeroCharacter* hero, UINT8 x, UINT8 y);
 void init_music();
 void init_splash();
@@ -81,7 +82,7 @@ void main() {
 
     fadein();
 
-    while (1) {
+    while (remaining_coins > 0) {
         if (joypad() & J_LEFT) {
             move_hero(&hero, hero.x - 1, hero.y);
         } else if (joypad() & J_RIGHT) {
@@ -95,6 +96,12 @@ void main() {
         wait(1);
         gbt_update();
     }
+
+    HIDE_WIN;
+
+    gbt_stop();
+    remove_coins();
+    printf("\n\n\n\n\n  Crabbity Giggity");
 }
 
 void wait(UINT8 duration) {
@@ -389,6 +396,20 @@ void init_coins() {
     set_interrupts(VBL_IFLAG | TIM_IFLAG);
 }
 
+void remove_coins() {
+    UINT8 i;
+
+    disable_interrupts();
+    remove_TIM(interrupt_tim_coins);
+    enable_interrupts();
+
+    set_interrupts(VBL_IFLAG);
+    
+    for (i = 5; i < 10; i++) {
+        set_sprite_tile(i, 0);
+    }
+}
+
 void init_gamescreen() {
     font_t min_font;
 
@@ -426,7 +447,4 @@ void update_remaining_coins() {
     }
 
     remaining_coins -= 1;
-    if (remaining_coins == 0) {
-        printf("You win");
-    }
 }
