@@ -38,6 +38,10 @@ UINT8 random_seed[100] = {
     5,66,0,9,52,61,10,65,26,68,45,74,83,26,72,28,15,93,3,30,
     62,49,43,113,32,131,48,64,126,74,12,80,71,61,125,44,11,10,2,86
 };
+UBYTE jumping = 0;
+UINT8 jump_max_y = 104;
+INT8 gravity = -2;
+UINT16 current_speed_y;
 
 void wait(UINT8 duration);
 void fadein();
@@ -52,6 +56,8 @@ void toggle_splash_text(int sprite, UBYTE on);
 void interrupt_tim_splash();
 void interrupt_tim_coins();
 void init_gamescreen();
+void jump(struct HeroCharacter* hero);
+INT8 wouldhitsurface(INT16 projectedYPosition);
 
 void main() {
     init_splash();
@@ -77,6 +83,10 @@ void main() {
             move_hero(&hero, hero.x - 1, hero.y);
         } else if (joypad() & J_RIGHT) {
             move_hero(&hero, hero.x + 1, hero.y);
+        }
+
+        if ((joypad() & J_A) || (joypad() & J_B) || jumping == 1) {
+            jump(&hero);
         }
 
         wait(1);
@@ -176,6 +186,36 @@ void move_hero(struct HeroCharacter* hero, UINT8 x, UINT8 y) {
     move_sprite(hero->sprites[1], x + hero_sprite_size, y);
     move_sprite(hero->sprites[2], x, y + hero_sprite_size);
     move_sprite(hero->sprites[3], x + hero_sprite_size, y + hero_sprite_size);
+}
+
+INT8 wouldhitsurface(INT16 target_y) {
+    if (target_y >= jump_max_y) {
+        return jump_max_y;
+    }
+
+    return -1;
+}
+
+void jump(struct HeroCharacter* hero) {
+    INT8 lowest_floor_y;
+
+    if (jumping == 0) {
+        jumping = 1;
+        current_speed_y = 10;
+    }
+
+    // work out current speed - effect of gravities accelleration down
+    current_speed_y += gravity;    
+    hero->y -= current_speed_y;
+
+    lowest_floor_y = wouldhitsurface(hero->y);
+
+    if (lowest_floor_y != -1){
+        jumping = 0;
+        move_hero(hero, hero->x, lowest_floor_y);
+    } else{
+        move_hero(hero, hero->x, hero->y);
+    }
 }
 
 void init_hero() {
