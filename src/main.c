@@ -16,9 +16,10 @@
 #include "Coin.c"
 
 extern const unsigned char * song_Data[];
-struct HeroCharacter hero;
-struct Coin coins[5];
+HeroCharacter hero;
+Coin coins[5];
 
+UINT8 remaining_coins = 30;
 UBYTE hero_direction_left = 0;
 UBYTE hero_sprite_size = 8;
 UBYTE splash_text_displayed = 1;
@@ -48,7 +49,7 @@ void fadein();
 void fadeout();
 void init_hero();
 void init_coins();
-void move_hero(struct HeroCharacter* hero, UINT8 x, UINT8 y);
+void move_hero(HeroCharacter* hero, UINT8 x, UINT8 y);
 void init_music();
 void init_splash();
 void clear_splash();
@@ -56,8 +57,10 @@ void toggle_splash_text(int sprite, UBYTE on);
 void interrupt_tim_splash();
 void interrupt_tim_coins();
 void init_gamescreen();
-void jump(struct HeroCharacter* hero);
+void jump(HeroCharacter* hero);
+void update_remaining_coins();
 INT8 wouldhitsurface(INT16 projectedYPosition);
+UBYTE has_collision(HeroCharacter* hero, Coin* coin);
 
 void main() {
     init_splash();
@@ -155,7 +158,12 @@ void init_music() {
     enable_interrupts();    
 }
 
-void move_hero(struct HeroCharacter* hero, UINT8 x, UINT8 y) {
+UBYTE has_collision(HeroCharacter* hero, Coin* coin) {
+    return (hero->x >= coin->x && hero->x <= coin->x + 8) && (hero->y >= coin->y && hero->y <= coin->y + 8)
+        || (coin->x >= hero->x && coin->x <= hero->x + 8) && (coin->y >= hero->y && coin->y <= hero->y + 8);
+}
+
+void move_hero(HeroCharacter* hero, UINT8 x, UINT8 y) {
     if ((hero_direction_left && hero->x < x) || (!hero_direction_left && hero->x > x)) {
         UBYTE tmp_top = hero->sprites[0];
         UBYTE tmp_bottom = hero->sprites[2];
@@ -196,7 +204,7 @@ INT8 wouldhitsurface(INT16 target_y) {
     return -1;
 }
 
-void jump(struct HeroCharacter* hero) {
+void jump(HeroCharacter* hero) {
     INT8 lowest_floor_y;
 
     if (jumping == 0) {
@@ -313,6 +321,7 @@ void clear_splash() {
 void interrupt_tim_coins() {
     UINT8 i;
     UINT8 x;
+    UBYTE collision;
 
     coin_drop_timer++;
     // sprite 5-9 are the coins
@@ -339,11 +348,16 @@ void interrupt_tim_coins() {
             set_sprite_prop(coins[i - 5].sprite, get_sprite_prop(coins[i - 5].sprite) & ~S_PRIORITY); 
         }
 
-        if (coins[i - 5].y >= coin_max_y) {
+        collision = has_collision(&hero, &coins[i - 5]);        
+        if (coins[i - 5].y >= coin_max_y || collision) {
             coin_drop_timer = 0;
 
             coins[i - 5].x = NULL;
             coins[i - 5].y = NULL;
+
+            if (collision) {
+                update_remaining_coins();
+            }
         }
 
         move_sprite(coins[i - 5].sprite, coins[i - 5].x, coins[i - 5].y);
@@ -391,4 +405,28 @@ void init_gamescreen() {
 
     init_hero();
     init_coins();
+}
+
+void update_remaining_coins() {
+    if (remaining_coins > 20) {
+        set_win_tile_xy(18, 0, 3);
+        set_win_tile_xy(19, 0, (remaining_coins % 20));
+    } else if (remaining_coins == 20) {
+        set_win_tile_xy(18, 0, 2);
+        set_win_tile_xy(19, 0, 10);
+    } else if (remaining_coins > 10) {
+        set_win_tile_xy(18, 0, 2);
+        set_win_tile_xy(19, 0, (remaining_coins % 10) + 1);
+    } else if (remaining_coins == 10) {
+        set_win_tile_xy(18, 0, 2);
+        set_win_tile_xy(19, 0, 1);
+    } else {
+        set_win_tile_xy(18, 0, 1);
+        set_win_tile_xy(19, 0, remaining_coins + 1);
+    }
+
+    remaining_coins -= 1;
+    if (remaining_coins == 0) {
+        printf("You win");
+    }
 }
