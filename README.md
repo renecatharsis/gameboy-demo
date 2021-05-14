@@ -11,7 +11,7 @@ Demo game for Nintendo GameBoy using gbdk
 - run `make.bat` to compile to dist directory
 
 # Thank you to
-- gdbk-2020
+- gbdk-2020
 - mod2gbt and GBT Player
 - GameBoy Tile/Background Designer
 - [GamingMonsters](https://www.youtube.com/playlist?list=PLeEj4c2zF7PaFv5MPYhNAkBGrkx4iPGJo) for their YouTube introduction series
